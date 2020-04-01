@@ -15,8 +15,6 @@ pub use plugin::*;
 pub use packet::*;
 use std::net::{SocketAddr, Ipv4Addr};
 
-pub type Packet = Vec<u8>;
-
 #[derive(Debug)]
 pub struct SendLANEvent {
     from: SocketAddr,

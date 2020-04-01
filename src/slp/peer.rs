@@ -88,7 +88,7 @@ impl Peer {
                 },
             };
 
-            let frame = ForwarderFrame::parse(&packet.bytes())?;
+            let frame = ForwarderFrame::parse(&packet)?;
 
             match frame {
                 ForwarderFrame::Keepalive => {},
@@ -97,7 +97,7 @@ impl Peer {
                         from: addr,
                         src_ip: ipv4.src_ip(),
                         dst_ip: ipv4.dst_ip(),
-                        packet,
+                        packet: packet.into(),
                     })).await?;
                 },
                 ForwarderFrame::Ipv4Frag(frag) => {
@@ -105,7 +105,7 @@ impl Peer {
                         from: addr,
                         src_ip: frag.src_ip(),
                         dst_ip: frag.dst_ip(),
-                        packet,
+                        packet: packet.into(),
                     })).await?;
                 },
                 _ => (),

@@ -42,10 +42,11 @@ pub trait Parser<'a> {
     where
         Self: Sized;
 
-    fn parse(bytes: &'a [u8]) -> Result<Self>
+    fn parse<A: 'a + AsRef<[u8]>>(bytes: &'a A) -> Result<Self>
     where
         Self: Sized
     {
+        let bytes = bytes.as_ref();
         if bytes.len() < Self::MIN_LENGTH || bytes.len() > Self::MAX_LENGTH {
             Err(ParseError::NotParseable)
         } else {

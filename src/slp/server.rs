@@ -134,7 +134,7 @@ impl UDPServer {
                 let _ = traffic_info.download(result::Result::<_, ()>::Ok(size));
             }
 
-            let frame = match ForwarderFrame::parse(&in_packet.bytes()) {
+            let frame = match ForwarderFrame::parse(&in_packet) {
                 Ok(f) => f,
                 Err(_) => continue,
             };
