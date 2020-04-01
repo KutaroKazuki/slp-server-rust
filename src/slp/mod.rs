@@ -3,12 +3,16 @@ mod frame;
 mod peer;
 mod peer_manager;
 mod stream;
+pub mod plugin;
+mod packet;
 
 pub use server::*;
 pub use frame::*;
 pub use peer::*;
 pub use peer_manager::*;
 pub(super) use stream::*;
+pub use plugin::*;
+pub use packet::*;
 use std::net::{SocketAddr, Ipv4Addr};
 
 pub type Packet = Vec<u8>;

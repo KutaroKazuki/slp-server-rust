@@ -1312,6 +1312,7 @@ dependencies = [
  "juniper_codegen",
  "juniper_subscriptions",
  "juniper_warp",
+ "lazy_static",
  "log 0.4.8",
  "serde",
  "serde_json",

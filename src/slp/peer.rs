@@ -2,7 +2,7 @@ use tokio::sync::mpsc;
 use std::net::SocketAddr;
 use std::time::Duration;
 use tokio::time::{Instant, timeout};
-use super::{Event, SendLANEvent, log_err, Packet};
+use super::{Event, SendLANEvent, log_err, InPacket};
 use super::frame::{ForwarderFrame, Parser};
 
 const IDLE_TIMEOUT: Duration = Duration::from_secs(5 * 60);
@@ -29,17 +29,17 @@ impl PeerState {
 }
 
 struct PeerInner {
-    rx: mpsc::Receiver<Packet>,
+    rx: mpsc::Receiver<InPacket>,
     addr: SocketAddr,
     event_send: mpsc::Sender<Event>,
 }
 pub struct Peer {
-    sender: mpsc::Sender<Packet>,
+    sender: mpsc::Sender<InPacket>,
     pub(super) state: PeerState,
 }
 impl Peer {
     pub fn new(addr: SocketAddr, event_send: mpsc::Sender<Event>) -> Self {
-        let (tx, rx) = mpsc::channel::<Packet>(10);
+        let (tx, rx) = mpsc::channel::<InPacket>(10);
         tokio::spawn(async move {
             let mut exit_send = event_send.clone();
             let _ = Self::do_packet(PeerInner {
@@ -54,7 +54,7 @@ impl Peer {
             state: PeerState::Idle,
         }
     }
-    pub fn on_packet(&mut self, data: Packet) -> std::result::Result<(), Box<dyn std::error::Error>> {
+    pub fn on_packet(&mut self, data: InPacket) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let frame = ForwarderFrame::parse(&data)?;
         let now = Instant::now();
         let state = match (frame, &self.state) {
@@ -88,7 +88,7 @@ impl Peer {
                 },
             };
 
-            let frame = ForwarderFrame::parse(&packet)?;
+            let frame = ForwarderFrame::parse(&packet.bytes())?;
 
             match frame {
                 ForwarderFrame::Keepalive => {},
