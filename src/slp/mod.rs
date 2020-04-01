@@ -16,17 +16,9 @@ pub use packet::*;
 use std::net::{SocketAddr, Ipv4Addr};
 
 #[derive(Debug)]
-pub struct SendLANEvent {
-    from: SocketAddr,
-    src_ip: Ipv4Addr,
-    dst_ip: Ipv4Addr,
-    packet: Packet,
-}
-
-#[derive(Debug)]
 pub enum Event {
     Close(SocketAddr),
-    SendLAN(SendLANEvent),
+    SendLAN(SocketAddr, OutPacket),
 }
 
 pub fn log_err<T, E: std::fmt::Debug>(result: std::result::Result<T, E>, msg: &str) {

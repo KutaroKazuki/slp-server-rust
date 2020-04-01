@@ -1,10 +1,11 @@
-use crate::slp::{PluginFactory, Plugin, Context};
+use crate::slp::plugin::*;
 
 pub struct LdnMitm;
 
+#[async_trait]
 impl Plugin for LdnMitm {
-    fn in_packet(&mut self) {}
-    fn out_packet(&mut self) {}
+    async fn in_packet(&mut self, packet: &InPacket) {}
+    async fn out_packet(&mut self, packet: &OutPacket) {}
 }
 
 pub struct Factory;

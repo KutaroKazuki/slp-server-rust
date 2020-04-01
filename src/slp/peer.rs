@@ -2,7 +2,7 @@ use tokio::sync::mpsc;
 use std::net::SocketAddr;
 use std::time::Duration;
 use tokio::time::{Instant, timeout};
-use super::{Event, SendLANEvent, log_err, InPacket};
+use super::{Event, log_err, InPacket, OutPacket, OutAddr};
 use super::frame::{ForwarderFrame, Parser};
 
 const IDLE_TIMEOUT: Duration = Duration::from_secs(5 * 60);
@@ -55,7 +55,7 @@ impl Peer {
         }
     }
     pub fn on_packet(&mut self, data: InPacket) -> std::result::Result<(), Box<dyn std::error::Error>> {
-        let frame = ForwarderFrame::parse(&data)?;
+        let frame = ForwarderFrame::parse(data.as_ref())?;
         let now = Instant::now();
         let state = match (frame, &self.state) {
             (ForwarderFrame::Ipv4(..), _) | (ForwarderFrame::Ipv4Frag(..), _) => {
@@ -88,25 +88,21 @@ impl Peer {
                 },
             };
 
-            let frame = ForwarderFrame::parse(&packet)?;
+            let frame = ForwarderFrame::parse(packet.as_ref())?;
 
             match frame {
                 ForwarderFrame::Keepalive => {},
                 ForwarderFrame::Ipv4(ipv4) => {
-                    event_send.send(Event::SendLAN(SendLANEvent{
-                        from: addr,
-                        src_ip: ipv4.src_ip(),
-                        dst_ip: ipv4.dst_ip(),
-                        packet: packet.into(),
-                    })).await?;
+                    event_send.send(Event::SendLAN(
+                        addr,
+                        OutPacket::new(ipv4.into(), packet.into())
+                    )).await?;
                 },
                 ForwarderFrame::Ipv4Frag(frag) => {
-                    event_send.send(Event::SendLAN(SendLANEvent{
-                        from: addr,
-                        src_ip: frag.src_ip(),
-                        dst_ip: frag.dst_ip(),
-                        packet: packet.into(),
-                    })).await?;
+                    event_send.send(Event::SendLAN(
+                        addr,
+                        OutPacket::new(frag.into(), packet.into())
+                    )).await?;
                 },
                 _ => (),
             }

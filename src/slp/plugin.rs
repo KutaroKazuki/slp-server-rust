@@ -1,4 +1,5 @@
-use super::PeerManager;
+pub use super::{PeerManager, InPacket, OutPacket};
+pub use async_trait::async_trait;
 
 pub struct Context<'a> {
     peer_manager: &'a PeerManager,
@@ -18,9 +19,10 @@ pub trait PluginFactory {
 }
 pub type BoxPluginFactory = Box<dyn PluginFactory + Send + Sync + 'static>;
 
+#[async_trait]
 pub trait Plugin {
-    fn in_packet(&mut self) {}
-    fn out_packet(&mut self) {}
+    async fn in_packet(&mut self, packet: &InPacket) {}
+    async fn out_packet(&mut self, packet: &OutPacket) {}
 }
 
 pub type BoxPlugin = Box<dyn Plugin + Send + 'static>;

@@ -1,8 +1,8 @@
 use tokio::io::Result;
 use tokio::net::{UdpSocket};
 use tokio::sync::{Mutex, mpsc, broadcast};
-use super::{Event, SendLANEvent, log_warn, ForwarderFrame, Parser, PeerManager, PeerManagerInfo, Packet, spawn_stream, BoxPlugin, BoxPluginFactory, Context};
-use super::{InPacket, OutPacket};
+use super::{Event, log_warn, ForwarderFrame, Parser, PeerManager, PeerManagerInfo, Packet, spawn_stream, BoxPlugin, BoxPluginFactory, Context};
+use super::{InPacket, OutPacket, OutAddr};
 use serde::Serialize;
 use juniper::GraphQLObject;
 use futures::stream::{StreamExt, BoxStream};
@@ -134,7 +134,7 @@ impl UDPServer {
                 let _ = traffic_info.download(result::Result::<_, ()>::Ok(size));
             }
 
-            let frame = match ForwarderFrame::parse(&in_packet) {
+            let frame = match ForwarderFrame::parse(in_packet.as_ref()) {
                 Ok(f) => f,
                 Err(_) => continue,
             };
@@ -153,21 +153,14 @@ impl UDPServer {
                     Event::Close(addr) => {
                         peer_manager.remove(&addr).await;
                     },
-                    Event::SendLAN(SendLANEvent{
-                        from,
-                        src_ip,
-                        dst_ip,
-                        packet
-                    }) => {
+                    Event::SendLAN(from, packet) => {
                         let traffic_info = &mut inner.lock().await.traffic_info;
                         log_warn(
                             traffic_info.upload(
                                 peer_manager.send_lan(
                                     &mut socket,
-                                    packet,
                                     from,
-                                    src_ip,
-                                    dst_ip,
+                                    packet,
                                 ).await
                             ),
                             "failed to send lan packet"
