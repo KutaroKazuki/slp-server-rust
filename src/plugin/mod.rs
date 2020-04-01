@@ -1,6 +1,6 @@
 #[cfg(feature = "ldn_mitm")]
-mod ldn_mitm;
-mod traffic;
+pub mod ldn_mitm;
+pub mod traffic;
 
 use crate::slp::{UDPServer, BoxPluginFactory};
 use lazy_static::lazy_static;

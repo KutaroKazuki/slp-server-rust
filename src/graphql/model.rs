@@ -1,5 +1,6 @@
 use juniper::{EmptyMutation, FieldError, RootNode, Value};
-use crate::slp::{UDPServer, ServerInfo, TrafficInfo};
+use crate::slp::{UDPServer, ServerInfo};
+use crate::plugin::traffic::TrafficInfo;
 use futures::stream::BoxStream;
 use std::sync::Arc;
 
