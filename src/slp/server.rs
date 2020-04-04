@@ -1,7 +1,7 @@
 use tokio::io::Result;
 use tokio::net::{UdpSocket};
 use tokio::sync::{Mutex, mpsc, broadcast};
-use super::{Event, log_warn, ForwarderFrame, Parser, PeerManager, PeerManagerInfo, Packet, spawn_stream, BoxPlugin, BoxPluginFactory, Context};
+use super::{Event, log_warn, ForwarderFrame, Parser, PeerManager, PeerManagerInfo, Packet, spawn_stream, BoxPlugin, BoxPluginType, Context};
 use super::{InPacket, OutPacket, OutAddr};
 use serde::Serialize;
 use juniper::GraphQLObject;
@@ -10,7 +10,9 @@ use futures::prelude::*;
 use crate::util::{FilterSameExt, create_socket};
 use std::net::SocketAddr;
 use std::sync::Arc;
-use std::result;
+use std::collections::HashMap;
+use downcast_rs::Downcast;
+use std::any::Any;
 
 type ServerInfoStream = BoxStream<'static, ServerInfo>;
 
@@ -30,13 +32,13 @@ pub struct UDPServerConfig {
 }
 
 pub struct Inner {
-    plugin: Vec<BoxPlugin>,
+    plugin: HashMap<String, BoxPlugin>,
 }
 
 impl Inner {
     fn new() -> Arc<Mutex<Self>> {
         Arc::new(Mutex::new(Self {
-            plugin: Vec::new(),
+            plugin: HashMap::new(),
         }))
     }
 }
@@ -138,9 +140,16 @@ impl UDPServer {
             .filter_same()
             .boxed()
     }
-    pub async fn add_plugin(&self, factory: &BoxPluginFactory) {
-        let plugin = factory.new(Context::new(&self.peer_manager));
-        self.inner.lock().await.plugin.push(plugin);
+    pub async fn add_plugin(&self, typ: &BoxPluginType) {
+        let plugin = typ.new(Context::new(&self.peer_manager));
+        self.inner.lock().await.plugin.insert(typ.name(), plugin);
+    }
+    pub async fn get_plugin<'a, T, F, R>(&'a self, typ: &BoxPluginType<T>, func: F) -> R
+    where
+        T: 'static,
+        F: Fn(Option<&T>) -> R
+    {
+        func(self.inner.lock().await.plugin.get(&typ.name()).unwrap().as_any().downcast_ref::<T>())
     }
 }
 
