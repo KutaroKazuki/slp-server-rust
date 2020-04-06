@@ -1,7 +1,7 @@
 use std::net::Ipv4Addr;
 use lru::LruCache;
 use bytes::Buf;
-use super::packet::OutAddr;
+use super::packet::{Packet, OutAddr};
 
 mod forwarder_type {
     pub const KEEPALIVE: u8   = 0;
@@ -193,6 +193,7 @@ impl<'a> Ping<'a> {
     }
 }
 
+#[derive(Debug, Clone)]
 struct FragItem {
     src_ip: Ipv4Addr,
     dst_ip: Ipv4Addr,
@@ -201,6 +202,7 @@ struct FragItem {
     total_part: u8,
     len: u16,
     pmtu: u16,
+    packet: Packet,
 }
 
 impl FragItem {
@@ -213,16 +215,33 @@ impl FragItem {
             total_part: frag.total_part(),
             len: frag.len(),
             pmtu: frag.pmtu(),
+            packet: vec![],
         }
     }
 }
 
 pub struct FragParser {
-    cache: LruCache<u16, FragItem>,
+    cache: LruCache<u16, Vec<Option<FragItem>>>,
 }
 
 impl FragParser {
-    fn process<'a>(frame: Ipv4Frag<'a>) {
-
+    fn process<'a>(&mut self, frame: Ipv4Frag<'a>) -> Option<Packet> {
+        let item = FragItem::from_frame(frame);
+        let id = item.id;
+        let list = if let Some(list) = self.cache.get_mut(&id) {
+            list
+        } else {
+            let mut vec = Vec::new();
+            vec.resize(item.total_part as usize, None);
+            self.cache.put(id, vec);
+            self.cache.get_mut(&id).unwrap()
+        };
+        let part = item.part as usize;
+        list[part] = Some(item);
+        if list.iter().all(|i| i.is_some()) {
+            None
+        } else {
+            None
+        }
     }
 }
